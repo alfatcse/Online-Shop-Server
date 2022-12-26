@@ -14,18 +14,9 @@ const { isObject } = require("util");
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: "*",
     methods: ["GET", "POST"],
   },
-});
-io.on("connection", (socket) => {
-  console.log("new user connected");
-  socket.on("disconnect", (socket) => {
-    console.log("user disconnect");
-  });
-  socket.on('reactEvent',(data)=>{
-    console.log(data);
-  })
 });
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.icjdeya.mongodb.net/?retryWrites=true&w=majority`;
@@ -53,12 +44,34 @@ async function run() {
   const phoneCollection = client.db("SellNow").collection("Phone");
   const bookingCollection = client.db("SellNow").collection("booking");
   const userCollection = client.db("SellNow").collection("Users");
+  const ChatCollection = client.db("SellNow").collection("Chat");
   try {
     app.get("/catagory", async (req, res) => {
       const query = {};
       const result = await phoneCollection.find(query).toArray();
       //console.log(result);
       res.send(result);
+    });
+    app.get("/chat/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      io.on("connection", (socket) => {
+        console.log("new user connected");
+        socket.on("disconnect", (socket) => {
+          console.log("user disconnect");
+        });
+        socket.on('chatId',(data)=>{
+          console.log(data)
+          socket.join(data)
+        })
+        socket.on("reactEvent", (data) => {
+          //chat is receiving here
+          console.log(data);
+          //chat is transmitting here 
+          socket.broadcast.emit("showMessage",data);
+        });
+      });
+      res.send(id);
     });
     app.get("/bookingspayment/:id", async (req, res) => {
       const id = req.params.id;
