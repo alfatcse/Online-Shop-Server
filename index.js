@@ -47,28 +47,53 @@ async function run() {
   const ChatCollection = client.db("SellNow").collection("Chat");
   try {
     app.get("/catagory", async (req, res) => {
+      const page=req.query.page;
+      const size=parseInt(req.query.size);
+      console.log(page,size);
       const query = {};
-      const result = await phoneCollection.find(query).toArray();
-      //console.log(result);
-      res.send(result);
+      const cursor = await phoneCollection.find(query);
+      const products=await cursor.skip(page*size).limit(size).toArray();
+      const count=await phoneCollection.estimatedDocumentCount();
+      res.send({count,products});
     });
     app.get("/chat/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
+      // console.log(id);
+      // io.on("connection", (socket) => {
+      //   console.log("new user connected");
+      //   socket.on("disconnect", (socket) => {
+      //     console.log("user disconnect");
+      //   });
+      //   socket.on('chatId',()=>{
+
+      //     socket.join(id)
+      //   })
+      //   // socket.join(id);
+      //   socket.on("reactEvent", (data) => {
+      //     //chat is receiving here
+      //     console.log(data);
+      //     //chat is transmitting here
+      //     socket.to(id).emit("showMessage",data);
+      //   });
+      // });
       io.on("connection", (socket) => {
-        console.log("new user connected");
-        socket.on("disconnect", (socket) => {
-          console.log("user disconnect");
+        //   console.log("new user connected");
+        //   socket.on("disconnect", (socket) => {
+        //     console.log("User disconnect");
+        //   });
+        //   socket.send("socket send");
+        //   socket.on("testEvent", (data) => {
+        //     console.log(data);
+        //   });
+        //   io.sockets.emit("fifa", "hello football");
+        socket.on("joinRoom", (data) => {
+          socket.join(data);
         });
-        socket.on('chatId',(data)=>{
-          console.log(data)
-          socket.join(data)
-        })
         socket.on("reactEvent", (data) => {
-          //chat is receiving here
           console.log(data);
-          //chat is transmitting here 
-          socket.broadcast.emit("showMessage",data);
+          // socket.broadcast.emit("showMessage", data);
+          require('events').EventEmitter.prototype._maxListeners = 100;
+          socket.to(data.room).emit("showMessage", data);
         });
       });
       res.send(id);
